@@ -7,16 +7,35 @@ def main():
     log_dir = "../logs/"
 
     df = load_dataframe(log_dir)
-    print(df.columns)
-    
+
     fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
 
-    sns.lineplot(data=df.loc[:, ["train loss", "test loss"]], ax=axs[0])
+    #
+    # Loss
+    #
 
+    df_tmp = df.loc[:, ["train loss", "test loss"]]
+    df_tmp.columns = ["train", "test"]
+    sns.lineplot(data=df_tmp.loc[:, ["train", "test"]], ax=axs[0])
+    axs[0].set_title("Loss")
 
-    sns.lineplot(data=df.loc[:, ["train accuracy", "test accuracy"]], ax=axs[1])
+    #
+    # Accuracy
+    #
 
-    sns.lineplot(data=df.loc[:, ["train divergence", "test divergence"]], ax=axs[2])
+    df_tmp = df.loc[:, ["train accuracy", "test accuracy"]]
+    df_tmp.columns = ["train", "test"]
+    sns.lineplot(data=df_tmp.loc[:, ["train", "test"]], ax=axs[1])
+    axs[1].set_title("Accuracy")
+
+    #
+    # Divergence
+    #
+
+    df_tmp = df.loc[:, ["train divergence", "test divergence"]]
+    df_tmp.columns = ["train", "test"]
+    sns.lineplot(data=df_tmp.loc[:, ["train", "test"]], ax=axs[2])
+    axs[2].set_title("Divergence")
 
     for ax in axs:
         ax.grid()

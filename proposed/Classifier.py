@@ -5,40 +5,43 @@ from snntorch import utils
 from snntorch import functional as SF
 
 from torchmetrics import MeanMetric
+from snntorch import spikegen
 
 import tqdm
 
-from Leaky import *
+from SynchronizedLeaky import *
+from Divergence import *
 
 
 class Classifier(nn.Module):
-    def __init__(self, num_layers):
+    def __init__(self):
         super().__init__()
 
-        self.num_layers = num_layers
 
-        num_inputs = 28*28
-        self.num_hidden = 64
-        self.num_outputs = 10
 
         # Temporal Dynamics
         self.num_steps = 25
         beta = 0.95
 
+        self.syn_lif_1 = SynchronizedLeaky(in_features=28*28, 
+                                           out_features=64, 
+                                           beta=beta
+                                        )
 
-        # Initialize layers
+        self.syn_lif_2 = SynchronizedLeaky(in_features=64, 
+                                           out_features=64, 
+                                           beta=beta
+                                        )
+        
+        self.syn_lif_3 = SynchronizedLeaky(in_features=64, 
+                                           out_features=64, 
+                                           beta=beta
+                                        )
 
-
-        self.layer_list = nn.ModuleList(
-            [nn.Linear(num_inputs, self.num_hidden)] +
-            [nn.Linear(self.num_hidden, self.num_hidden) for _ in range(num_layers - 1)] +
-            [nn.Linear(self.num_hidden, self.num_outputs)]
-        )  
-
-        self.lif = Leaky(beta=beta)
-
-
-
+        self.syn_lif_4 = SynchronizedLeaky(in_features=64, 
+                                           out_features=10, 
+                                           beta=beta
+                                        )
 
         self.cce_rate_loss = SF.ce_rate_loss()
 
@@ -50,39 +53,36 @@ class Classifier(nn.Module):
         self.loss_metric = MeanMetric()
         self.accuracy_metric = MeanMetric()
 
-    def forward(self, x):
+        # Divergence
+        self.num_layers = 4
+        self.divergence_layer_metric_list = [
+            MeanMetric() for _ in range(self.num_layers)
+        ]
+
+
+    def forward(self, x, is_spike):
         
-        batch_size = x.shape[0]
-        # Initialize hidden states at t=0
+        batch_size = x.shape[1]
 
-        mem_list = (
-            [torch.zeros(size=(batch_size, self.num_hidden)).cuda()] + 
-            [torch.zeros(size=(batch_size, self.num_hidden)).cuda() for _ in range(self.num_layers - 1)] +
-            [torch.zeros(size=(batch_size, self.num_outputs)).cuda()]
-        )
+        mem_1 = torch.zeros(size=(batch_size, 64)).cuda()
+        mem_2 = torch.zeros(size=(batch_size, 64)).cuda()
+        mem_3 = torch.zeros(size=(batch_size, 64)).cuda()
+        mem_4 = torch.zeros(size=(batch_size, 10)).cuda()
 
-        spk_rec = []
-        spk_soft_rec = []
-
+        preds_list = []
+        out_layerwise_list = []
+      
         for step in range(self.num_steps):
-            
-            spk_rec_tmp = []
-            spk_soft_rec_tmp = []
+            out_1, mem_1 = self.syn_lif_1(x[step, ...], mem_1, is_spike)
+            out_2, mem_2 = self.syn_lif_2(out_1, mem_2, is_spike)
+            out_3, mem_3 = self.syn_lif_3(out_2, mem_3, is_spike)
+            out_4, mem_4 = self.syn_lif_4(out_3, mem_4, is_spike)
 
-            x_tmp = x.clone()
-            for idx, layer in enumerate(self.layer_list):
-           
-                x_tmp = layer(x_tmp)
-                
-                spk, spk_soft, mem_list[idx] = self.lif(x_tmp, mem_list[idx])
+            out_layerwise_list.append([out_1, out_2, out_3, out_4])
 
-                spk_rec_tmp.append(spk)
-                spk_soft_rec_tmp.append(spk_soft)
+            preds_list.append(out_4)
 
-            spk_rec.append(spk_rec_tmp)
-            spk_soft_rec.append(spk_soft_rec_tmp)
-
-        return spk_rec, spk_soft_rec
+        return torch.stack(preds_list, dim=0), out_layerwise_list
 
     
     @torch.no_grad
@@ -93,28 +93,58 @@ class Classifier(nn.Module):
         self.loss_metric.reset()
         self.accuracy_metric.reset()
 
+        for layer_idx in range(self.num_layers):
+            self.divergence_layer_metric_list[layer_idx].reset()
+
         for x, targets in tqdm.tqdm(test_loader, position=0, leave=True):
         
             x, targets = x.to(device), targets.to(device)
 
+            # Forward pass
             batch_size = x.shape[0]
-            x = x.view(batch_size, -1)
 
-            spk_rec = self(x)
+            x = spikegen.rate(x, num_steps=self.num_steps)
+
+            x = x.view(self.num_steps, batch_size, -1)
+
+            _, conti_act = self(x, is_spike=False)
+
+            spk_rec, spike_act = self(x, is_spike=True)
+
             loss = self.cce_rate_loss(spk_rec, targets)
 
+            #
+            # Update metrics
+            #
+
+            # Loss
             self.loss_metric.update(loss)
 
             # Accuracy
             accuracy = SF.accuracy_rate(spk_rec, targets)
             self.accuracy_metric.update(accuracy)
 
+            # Divergence
+            divergence_layerwise = compute_divergence(spike_act, conti_act, layerwise=True)
+            
+            for layer_idx in range(self.num_layers):
+                self.divergence_layer_metric_list[layer_idx].update(divergence_layerwise[layer_idx].cpu())
 
+        
         test_loss = self.loss_metric.compute()
         test_accuracy = self.accuracy_metric.compute()
+        
+        divergence_layerwise = torch.zeros(size=(self.num_layers,))
+        for layer_idx in range(self.num_layers):
+            divergence_layerwise[layer_idx] = self.divergence_layer_metric_list[layer_idx].compute()
+
+        divergence = torch.mean(divergence_layerwise)
 
         self.loss_metric.reset()
         self.accuracy_metric.reset()
-        
-        return test_loss, test_accuracy
+
+        for layer_idx in range(self.num_layers):
+            self.divergence_layer_metric_list[layer_idx].reset()
+    
+        return test_loss, test_accuracy, divergence_layerwise, divergence
     
