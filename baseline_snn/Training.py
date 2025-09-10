@@ -6,28 +6,15 @@ from torchvision import datasets, transforms
 from torch.utils.tensorboard import SummaryWriter
 from snntorch import functional as SF
 
+from snntorch import spikegen
+
 from Classifier import *
 
 import tqdm
 
-NUM_EPOCHS = 10
+NUM_EPOCHS = 32
 BATCH_SIZE = 128
 NUM_THREADS = 16
-
-def compute_divergence(spk_list, spk_soft_list):
-
-    num_time_steps = len(spk_list)
- 
-    divergence = 0
-    for t in range(num_time_steps):
-        
-    
-        for spk, spk_soft in zip(spk_list[t], spk_soft_list[t]):
-            divergence += torch.mean( (spk - spk_soft)**2 )
-    
-    divergence = divergence / num_time_steps
-
-    return divergence
 
 
 def main():
@@ -102,11 +89,10 @@ def main():
         # -> Determinate initial train_loss and train_accuracy
         if epoch == 0:
 
-            continue
-            train_loss, train_accuracy = model.test(train_loader, device)
+            
+            train_loss, train_accuracy, train_divergence_layerwise, train_divergence = model.test(train_loader, device)
 
-
-
+        
         else:
 
             model.train()
@@ -119,7 +105,11 @@ def main():
                 model.optimizer.zero_grad()
 
                 # Forward pass
-                x = x.view(BATCH_SIZE, -1)
+
+                x = spikegen.rate(x, num_steps=model.num_steps)
+
+                x = x.view(model.num_steps, BATCH_SIZE, -1)
+
                 spk_rec, spk_list, spk_soft_list = model(x)
 
 
@@ -145,22 +135,33 @@ def main():
 
                 # Divergence
 
-                #with torch.no_grad:
-                compute_divergence(spk_list, spk_soft_list)
+                with torch.no_grad():
+                    divergence_layerwise = compute_divergence(spk_list, spk_soft_list, layerwise=True)
+                    
+                    for layer_idx in range(model.num_layers):
+                        model.divergence_layer_metric_list[layer_idx].update(divergence_layerwise[layer_idx].cpu())
 
             train_loss = model.loss_metric.compute()
             train_accuracy = model.accuracy_metric.compute()
 
-        test_loss, test_accuracy = model.test(test_loader, device)
+            train_divergence_layerwise = torch.zeros(size=(model.num_layers,))
+            for layer_idx in range(model.num_layers):
+                train_divergence_layerwise[layer_idx] = model.divergence_layer_metric_list[layer_idx].compute()
+
+            train_divergence = torch.mean(train_divergence_layerwise)
+
+        test_loss, test_accuracy, test_divergence_layerwise, test_divergence = model.test(test_loader, device)
 
         #
         # Output
         #
-        print(f"    train_loss: {train_loss}")
-        print(f"     test_loss: {test_loss}")
-        print(f"train_accuracy: {train_accuracy}")
-        print(f" test_accuracy: {test_accuracy}")
-  
+        print(f"      train_loss: {train_loss}")
+        print(f"       test_loss: {test_loss}")
+        print(f"  train_accuracy: {train_accuracy}")
+        print(f"   test_accuracy: {test_accuracy}")
+        print(f"train_divergence: {train_divergence}")
+        print(f" test_divergence: {test_divergence}")
+
         #
         # Logging
         #
@@ -170,6 +171,15 @@ def main():
         
         writer.add_scalars("Accuracy",
                             { "Train" : train_accuracy, "Test" : test_accuracy },
+                            epoch)
+        
+        for layer_idx in range(model.num_layers):
+            writer.add_scalars(f"Divergence_layer_{layer_idx}",
+                            { "Train" : train_divergence_layerwise[layer_idx], "Test" : test_divergence_layerwise[layer_idx] },
+                            epoch)
+        
+        writer.add_scalars("Divergence",
+                            { "Train" : train_divergence, "Test" : test_divergence },
                             epoch)
         
         writer.flush()
