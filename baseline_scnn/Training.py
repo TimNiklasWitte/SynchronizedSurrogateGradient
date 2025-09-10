@@ -7,9 +7,12 @@ from torch.utils.tensorboard import SummaryWriter
 from snntorch import functional as SF
 
 from baseline_scnn import Classifier as b_cnn
+from snntorch import spikegen
 from config import *
 
 import tqdm
+
+file_path = f"./baseline_scnn/logs/"
 
 def compute_divergence(spk_list, spk_soft_list):
 
@@ -74,8 +77,6 @@ def main():
     # Logging
     #
 
-    file_path = f"./logs/"
-
     writer = SummaryWriter(file_path)
 
 
@@ -116,9 +117,8 @@ def main():
                 model.optimizer.zero_grad()
 
                 # Forward pass
-                x = x.view(BATCH_SIZE, -1)
+                #x = spikegen.rate(x, num_steps=model.num_steps)
                 spk_rec, mem_rec = model(x)
-
                 # Calc loss
                 loss = model.cce_loss(spk_rec, target)
 

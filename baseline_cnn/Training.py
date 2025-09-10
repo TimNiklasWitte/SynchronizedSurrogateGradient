@@ -11,6 +11,8 @@ from config import *
 
 import tqdm
 
+file_path = f"./baseline_cnn/logs/"
+
 def compute_divergence(spk_list, spk_soft_list):
 
     num_time_steps = len(spk_list)
@@ -73,8 +75,6 @@ def main():
     #
     # Logging
     #
-
-    file_path = f"./logs/"
 
     writer = SummaryWriter(file_path)
 

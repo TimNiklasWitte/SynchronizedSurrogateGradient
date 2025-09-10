@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.optim as optim
 from snntorch import surrogate
-
+from snntorch import functional as SF
 
 #3 Dense Layer 
 #MNIST 28x28 -> 64->64->64->10 
@@ -15,6 +15,7 @@ ACTIVATION = nn.Sigmoid()
 BATCH_SIZE = 128
 OPTIMIZER = optim.Adam
 LOSS = nn.CrossEntropyLoss()
+SPIKE_LOSS = SF.ce_rate_loss()
 LEARNING_RATE = 0.0001
 NUM_EPOCHS = 32
 
