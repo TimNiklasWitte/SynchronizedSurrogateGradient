@@ -6,7 +6,7 @@ from torchvision import datasets, transforms
 from torch.utils.tensorboard import SummaryWriter
 from snntorch import functional as SF
 
-from baseline_cnn import Classifier as b_cnn
+from baseline.cnn import Classifier as b_cnn
 from config import *
 
 import tqdm

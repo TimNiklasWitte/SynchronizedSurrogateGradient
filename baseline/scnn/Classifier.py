@@ -110,7 +110,7 @@ class Classifier(nn.Module):
 
     
     @torch.no_grad
-    def test(self, device, test_loader):
+    def test(self, test_loader, device):
 
         self.eval()
 
@@ -131,17 +131,14 @@ class Classifier(nn.Module):
             div_layerwise = compute_divergence(spk_list, spk_soft_list, layerwise=True)
 
             loss = self.cce_loss(spk_rec, target)
-            
-            predictions = spk_rec
 
             self.loss_metric.update(loss)
 
-            predicated_labels = torch.argmax(predictions, dim=1)
-            accuracy_batch = self.accuracy(predicated_labels, target)
+            accuracy_batch = SF.accuracy_rate(spk_rec, target)
             self.accuracy_metric.update(accuracy_batch)
 
             for i, d in enumerate(div_layerwise):
-                self.div_layer_metrics[i].update(d)
+                self.div_layer_metrics[i].update(d.cpu())
 
 
         test_loss = self.loss_metric.compute()

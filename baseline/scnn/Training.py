@@ -6,7 +6,7 @@ from torchvision import datasets, transforms
 from torch.utils.tensorboard import SummaryWriter
 from snntorch import functional as SF
 
-from baselines.baseline_scnn import Classifier as b_scnn
+from baseline.scnn import Classifier as b_scnn
 from snntorch import spikegen
 from config import *
 
