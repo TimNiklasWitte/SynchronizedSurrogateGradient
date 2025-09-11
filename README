@@ -1,4 +1,6 @@
-- ANN
+python -m baseline_ann.Training
+python -m baseline_cnn.Training
+python -m baseline_scnn.Training
 
 3 Dense Layer 
 MNIST 28x28->64->64->64->10 
@@ -8,4 +10,5 @@ Batch_Size= 128
 Optimizer = Adam
 LossFunction = CrossEntropyLoss
 LEarningrate 0.0001
-
+Epochen=32
+Dataset=MNIST_FASHION
