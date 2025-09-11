@@ -2,6 +2,10 @@ python -m baseline_ann.Training
 python -m baseline_cnn.Training
 python -m baseline_scnn.Training
 
+python -m plotting.GetBestAccuracy
+python -m plotting.PlotSigmoid_SigmoidPrime
+python -m plotting.PlotTraining
+
 3 Dense Layer 
 MNIST 28x28->64->64->64->10 
 

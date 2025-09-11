@@ -105,12 +105,14 @@ def main():
 
                 # Forward pass
                 x = spikegen.rate(x, num_steps=model.num_steps)
-                spk_rec, mem_rec = model(x)
+                spk_rec, spike_act, spike_soft = model(x)
                 # Calc loss
                 loss = model.cce_loss(spk_rec, target)
 
                 # divergence
-                div = b_scnn.divergence_mse(spk_rec, mem_rec)
+                divergence_layerwise = b_scnn.compute_divergence(spike_act, spike_soft, layerwise=True)
+                divergence = torch.mean(divergence_layerwise)
+                divergence.backward(retain_graph=True)
 
                 # Backprob
                 loss.backward()
@@ -128,25 +130,39 @@ def main():
                 # Accuracy
                 accuracy = SF.accuracy_rate(spk_rec, target)
                 model.accuracy_metric.update(accuracy)
-                model.div_metric.update(div)
+                
+                # Divergence
+
+                with torch.no_grad():
+                    #divergence_layerwise = compute_divergence(spk_list, spk_soft_list, layerwise=True)
+                    
+                    for layer_idx in range(model.num_spike_layer):
+                        model.div_layer_metrics[layer_idx].update(divergence_layerwise[layer_idx].cpu())
+
 
    
             train_loss = model.loss_metric.compute()
             train_accuracy = model.accuracy_metric.compute()
-            train_divergence = model.div_metric.compute()
 
-        test_loss, test_accuracy, test_divergence = model.test(device, test_loader)
+            train_divergence_layerwise = torch.zeros(size=(model.num_spike_layer,))
+            for layer_idx in range(model.num_spike_layer):
+                train_divergence_layerwise[layer_idx] = model.div_layer_metrics[layer_idx].compute()
+
+            train_divergence = torch.mean(train_divergence_layerwise)
+
+
+        test_loss, test_accuracy, test_divergence_layerwise, test_divergence = model.test(test_loader, device)
 
         #
         # Output
         #
-        print(f"    train_loss: {train_loss}")
-        print(f"     test_loss: {test_loss}")
-        print(f"train_accuracy: {train_accuracy}")
-        print(f" test_accuracy: {test_accuracy}")
+        print(f"      train_loss: {train_loss}")
+        print(f"       test_loss: {test_loss}")
+        print(f"  train_accuracy: {train_accuracy}")
+        print(f"   test_accuracy: {test_accuracy}")
         print(f"train_divergence: {train_divergence}")
         print(f" test_divergence: {test_divergence}")
-  
+
         #
         # Logging
         #
@@ -157,12 +173,17 @@ def main():
         writer.add_scalars("Accuracy",
                             { "Train" : train_accuracy, "Test" : test_accuracy },
                             epoch)
+        
+        for layer_idx in range(model.num_spike_layer):
+            writer.add_scalars(f"Divergence_layer_{layer_idx}",
+                            { "Train" : train_divergence_layerwise[layer_idx], "Test" : test_divergence_layerwise[layer_idx] },
+                            epoch)
+        
         writer.add_scalars("Divergence",
                             { "Train" : train_divergence, "Test" : test_divergence },
                             epoch)
         
         writer.flush()
-
     
 if __name__ == "__main__":
     try:
