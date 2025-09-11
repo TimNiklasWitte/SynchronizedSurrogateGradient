@@ -12,7 +12,7 @@ from config import *
 
 import tqdm
 
-file_path = f".baselines/baseline_scnn/logs/"
+file_path = f".baseline/scnn/logs/"
 
 
 
@@ -106,14 +106,13 @@ def main():
                 # Forward pass
                 x = spikegen.rate(x, num_steps=model.num_steps)
                 spk_rec, spike_act, spike_soft = model(x)
-                # Calc loss
-                loss = model.cce_loss(spk_rec, target)
 
                 # divergence
                 divergence_layerwise = b_scnn.compute_divergence(spike_act, spike_soft, layerwise=True)
                 divergence = torch.mean(divergence_layerwise)
-                divergence.backward(retain_graph=True)
 
+                # Calc loss
+                loss = model.cce_loss(spk_rec, target)
                 # Backprob
                 loss.backward()
 
