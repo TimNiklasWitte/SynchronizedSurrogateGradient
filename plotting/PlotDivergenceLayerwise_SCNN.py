@@ -5,7 +5,7 @@ import seaborn as sns
 
 def main():
 
-    num_layers = 4
+    num_layers = 3
 
     log_dir = "./../baseline/scnn/logs"
 
@@ -21,8 +21,8 @@ def main():
         axs[layer_idx].set_title(f"layer {layer_idx}")
 
 
-    sns.lineplot(data=df.loc[:, ["test divergence"]], ax=axs[4], legend=None)
-    axs[4].set_title(f"average")
+    sns.lineplot(data=df.loc[:, ["test divergence"]], ax=axs[3], legend=None)
+    axs[3].set_title(f"average")
 
     for ax in axs:
         ax.grid()

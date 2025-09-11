@@ -51,7 +51,7 @@ def main():
     )
 
     plt.tight_layout(rect=[0, 0.02, 1, 1])
-    plt.savefig("./plots/CompareDivergence.png", dpi=200)
+    plt.savefig("./plots/CompareDivergence_SNN.png", dpi=200)
     plt.show()
 
 if __name__ == "__main__":
