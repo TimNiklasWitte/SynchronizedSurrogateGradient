@@ -11,7 +11,7 @@ from config import *
 
 import tqdm
 
-file_path = f"./baseline_cnn/logs/"
+file_path = f"./baseline/cnn/logs/"
 
 def compute_divergence(spk_list, spk_soft_list):
 
