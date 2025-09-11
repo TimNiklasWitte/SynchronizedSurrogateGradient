@@ -1,4 +1,6 @@
+import os
 from matplotlib import pyplot as plt
+from plotting.plot_conf import PLOTTING_DIR
 
 import numpy as np
 
@@ -35,7 +37,8 @@ def main():
     axs[1].legend(title="k", loc="center left", bbox_to_anchor=(1, 0.5))
 
     plt.tight_layout()
-    plt.savefig("./plots/Sigmoid_SigmoidPrime.png", dpi=200)
+    os.makedirs( PLOTTING_DIR + "/plots", exist_ok=True)
+    plt.savefig(PLOTTING_DIR +"/plots/Sigmoid_SigmoidPrime.png", dpi=200)
 
 if __name__ == "__main__":
     try:

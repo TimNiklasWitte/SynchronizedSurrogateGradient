@@ -6,28 +6,15 @@ from torchvision import datasets, transforms
 from torch.utils.tensorboard import SummaryWriter
 from snntorch import functional as SF
 
-from baseline_scnn import Classifier as b_cnn
+from baselines.baseline_scnn import Classifier as b_scnn
 from snntorch import spikegen
 from config import *
 
 import tqdm
 
-file_path = f"./baseline_scnn/logs/"
+file_path = f".baselines/baseline_scnn/logs/"
 
-def compute_divergence(spk_list, spk_soft_list):
 
-    num_time_steps = len(spk_list)
- 
-    divergence = 0
-    for t in range(num_time_steps):
-        
-    
-        for spk, spk_soft in zip(spk_list[t], spk_soft_list[t]):
-            divergence += torch.mean( (spk - spk_soft)**2 )
-    
-    divergence = divergence / num_time_steps
-
-    return divergence
 
 
 def main():
@@ -85,7 +72,7 @@ def main():
     # Init Model
     #
 
-    model = b_cnn.Classifier()
+    model = b_scnn.Classifier()
     model.to(device)
 
     #
@@ -117,10 +104,13 @@ def main():
                 model.optimizer.zero_grad()
 
                 # Forward pass
-                #x = spikegen.rate(x, num_steps=model.num_steps)
+                x = spikegen.rate(x, num_steps=model.num_steps)
                 spk_rec, mem_rec = model(x)
                 # Calc loss
                 loss = model.cce_loss(spk_rec, target)
+
+                # divergence
+                div = b_scnn.divergence_mse(spk_rec, mem_rec)
 
                 # Backprob
                 loss.backward()
@@ -138,12 +128,14 @@ def main():
                 # Accuracy
                 accuracy = SF.accuracy_rate(spk_rec, target)
                 model.accuracy_metric.update(accuracy)
+                model.div_metric.update(div)
 
    
             train_loss = model.loss_metric.compute()
             train_accuracy = model.accuracy_metric.compute()
+            train_divergence = model.div_metric.compute()
 
-        test_loss, test_accuracy = model.test(device, test_loader)
+        test_loss, test_accuracy, test_divergence = model.test(device, test_loader)
 
         #
         # Output
@@ -152,6 +144,8 @@ def main():
         print(f"     test_loss: {test_loss}")
         print(f"train_accuracy: {train_accuracy}")
         print(f" test_accuracy: {test_accuracy}")
+        print(f"train_divergence: {train_divergence}")
+        print(f" test_divergence: {test_divergence}")
   
         #
         # Logging
@@ -162,6 +156,9 @@ def main():
         
         writer.add_scalars("Accuracy",
                             { "Train" : train_accuracy, "Test" : test_accuracy },
+                            epoch)
+        writer.add_scalars("Divergence",
+                            { "Train" : train_divergence, "Test" : test_divergence },
                             epoch)
         
         writer.flush()
