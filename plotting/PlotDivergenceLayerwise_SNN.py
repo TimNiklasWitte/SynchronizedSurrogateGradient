@@ -7,28 +7,29 @@ def main():
 
     num_layers = 4
 
-    log_dir = "../logs/"
+    log_dir = "./../baseline/snn/logs"
 
     df = load_dataframe(log_dir)
  
-    fig, axs = plt.subplots(nrows=1, ncols=num_layers, figsize=(12, num_layers))
+    fig, axs = plt.subplots(nrows=1, ncols=num_layers + 1, figsize=(16, num_layers + 1))
 
     for layer_idx in range(num_layers):
         
-        df_tmp = df.loc[:, [f"train divergence layer {layer_idx}", 
-                                     f"test divergence layer {layer_idx}"]]
-        df_tmp.columns = ["train", "test"]
 
-        sns.lineplot(data=df_tmp.loc[:, ["train", "test"]], ax=axs[layer_idx])
+        sns.lineplot(data=df.loc[:, [f"test divergence layer {layer_idx}"]], ax=axs[layer_idx], legend=None)
 
         axs[layer_idx].set_title(f"layer {layer_idx}")
 
 
+    sns.lineplot(data=df.loc[:, ["test divergence"]], ax=axs[4], legend=None)
+    axs[4].set_title(f"average")
+
     for ax in axs:
         ax.grid()
+        ax.set_ylabel("Activation divergence")
 
     plt.tight_layout()
-    plt.savefig("./plots/DivergenceLayerwise.png", dpi=200)
+    plt.savefig("./plots/DivergenceLayerwise_SNN.png", dpi=200)
     plt.show()
 
 if __name__ == "__main__":
