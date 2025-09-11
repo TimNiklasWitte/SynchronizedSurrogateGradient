@@ -1,10 +1,13 @@
-from LoadDataframe import *
+from plotting.plot_conf import PLOTTING_DIR
+from plotting.LoadDataframe import *
 
 import seaborn as sns
 import numpy as np
 
+
 def main():
-    log_dir = "../logs/"
+    
+    log_dir = PLOTTING_DIR + "/logs/"
 
     df = load_dataframe(log_dir)
 

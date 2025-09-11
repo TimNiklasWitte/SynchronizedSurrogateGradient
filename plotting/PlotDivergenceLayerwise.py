@@ -1,5 +1,6 @@
 from LoadDataframe import *
 from matplotlib import pyplot as plt
+from plot_conf import *
 
 import seaborn as sns
 
@@ -7,7 +8,7 @@ def main():
 
     num_layers = 4
 
-    log_dir = "../logs/"
+    log_dir = PLOT_DIR +"/logs/"
 
     df = load_dataframe(log_dir)
  
@@ -28,7 +29,7 @@ def main():
         ax.grid()
 
     plt.tight_layout()
-    plt.savefig("./plots/DivergenceLayerwise.png", dpi=200)
+    plt.savefig(PLOT_DIR +"/plots/DivergenceLayerwise.png", dpi=200)
     plt.show()
 
 if __name__ == "__main__":
