@@ -1,6 +1,6 @@
-python -m baseline_ann.Training
-python -m baseline_cnn.Training
-python -m baseline_scnn.Training
+python -m baseline.ann.Training
+python -m baseline.cnn.Training
+python -m baseline.scnn.Training
 
 
 You need to change the config in the plotting folder to the right nn folder
