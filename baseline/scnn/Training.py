@@ -12,7 +12,7 @@ from config import *
 
 import tqdm
 
-file_path = f".baseline/scnn/logs/"
+file_path = f"./baseline/scnn/logs/"
 
 
 
@@ -109,10 +109,11 @@ def main():
 
                 # divergence
                 divergence_layerwise = b_scnn.compute_divergence(spike_act, spike_soft, layerwise=True)
-                divergence = torch.mean(divergence_layerwise)
+                divergence = divergence_layerwise.mean()
+                #divergence.backward(retain_graph=True)
 
                 # Calc loss
-                loss = model.cce_loss(spk_rec, target)
+                loss = model.cce_loss(spk_rec, target) + divergence
                 # Backprob
                 loss.backward()
 

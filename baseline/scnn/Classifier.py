@@ -30,7 +30,7 @@ def compute_divergence(spk_list, spk_soft_list, layerwise=False):
            
             divergence[layer_idx] += torch.mean( torch.abs(spk - spk_soft) )
     
-    divergence = divergence / num_time_steps
+    divergence = divergence/num_time_steps
     
     if not layerwise:
         divergence = torch.mean(divergence)
@@ -94,7 +94,7 @@ class Classifier(nn.Module):
                 if isinstance(layer, snn.Leaky):
                     spk, mem = layer(cur_x)  # spk: binary, mem: membrane potential
                     # soft spikes from membrane
-                    spk_soft = torch.sigmoid((mem - THRESHOLD)*SLOPE)  # threshold=1.0, slope=25
+                    spk_soft = torch.sigmoid((mem - THRESHOLD)) # threshold=1.0, slope=25
                     spk_step.append(spk)
                     spk_soft_step.append(spk_soft)
                     cur_x = spk
