@@ -2,6 +2,8 @@ python -m baseline_ann.Training
 python -m baseline_cnn.Training
 python -m baseline_scnn.Training
 
+
+You need to change the config in the plotting folder to the right nn folder
 python -m plotting.GetBestAccuracy
 python -m plotting.PlotSigmoid_SigmoidPrime
 python -m plotting.PlotTraining
