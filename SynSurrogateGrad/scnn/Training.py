@@ -6,15 +6,16 @@ from torchvision import datasets, transforms
 from torch.utils.tensorboard import SummaryWriter
 from snntorch import functional as SF
 
+from config import *
+
 from snntorch import spikegen
 
-from Classifier import *
+from SynSurrogateGrad.scnn.Classifier import Classifier
+from SynSurrogateGrad.scnn.Divergence import compute_divergence
 
 import tqdm
 
-NUM_EPOCHS = 32
-BATCH_SIZE = 128
-NUM_THREADS = 16
+file_path = f"./SynSurrogateGrad/scnn/logs/"
 
 
 def main():
@@ -63,8 +64,6 @@ def main():
     #
     # Logging
     #
-
-    file_path = f"./logs/"
 
     writer = SummaryWriter(file_path)
 

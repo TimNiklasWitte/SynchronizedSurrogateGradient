@@ -7,10 +7,12 @@ from snntorch import functional as SF
 from torchmetrics import MeanMetric
 from snntorch import spikegen
 
+from config import *
+
 import tqdm
 
-from SynchronizedLeaky import *
-from Divergence import *
+from SynSurrogateGrad.snn.SynchronizedLeaky import SynchronizedLeaky
+from SynSurrogateGrad.snn.Divergence import compute_divergence
 
 
 class Classifier(nn.Module):
@@ -20,32 +22,31 @@ class Classifier(nn.Module):
 
 
         # Temporal Dynamics
-        self.num_steps = 25
-        beta = 0.95
+        self.num_steps = NUM_STEPS
+        beta = BETA
 
-        self.syn_lif_1 = SynchronizedLeaky(in_features=28*28, 
-                                           out_features=64, 
+        self.syn_lif_1 = SynchronizedLeaky(in_features=INPUT_DIM, 
+                                           out_features=HIDDEN_DIM, 
                                            beta=beta
                                         )
 
-        self.syn_lif_2 = SynchronizedLeaky(in_features=64, 
-                                           out_features=64, 
+        self.syn_lif_2 = SynchronizedLeaky(in_features=HIDDEN_DIM, 
+                                           out_features=HIDDEN_DIM, 
                                            beta=beta
                                         )
         
-        self.syn_lif_3 = SynchronizedLeaky(in_features=64, 
-                                           out_features=64, 
+        self.syn_lif_3 = SynchronizedLeaky(in_features=HIDDEN_DIM, 
+                                           out_features=HIDDEN_DIM, 
                                            beta=beta
                                         )
 
-        self.syn_lif_4 = SynchronizedLeaky(in_features=64, 
-                                           out_features=10, 
+        self.syn_lif_4 = SynchronizedLeaky(in_features=HIDDEN_DIM, 
+                                           out_features=OUTPUT_DIM, 
                                            beta=beta
                                         )
 
-        self.cce_rate_loss = SF.ce_rate_loss()
-
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=0.0001)
+        self.cce_rate_loss = SPIKE_LOSS
+        self.optimizer =OPTIMIZER(self.parameters(), lr=LEARNING_RATE)
 
         #
         # Metrics
@@ -64,10 +65,10 @@ class Classifier(nn.Module):
         
         batch_size = x.shape[1]
 
-        mem_1 = torch.zeros(size=(batch_size, 64)).cuda()
-        mem_2 = torch.zeros(size=(batch_size, 64)).cuda()
-        mem_3 = torch.zeros(size=(batch_size, 64)).cuda()
-        mem_4 = torch.zeros(size=(batch_size, 10)).cuda()
+        mem_1 = torch.zeros(size=(batch_size, HIDDEN_DIM)).cuda()
+        mem_2 = torch.zeros(size=(batch_size, HIDDEN_DIM)).cuda()
+        mem_3 = torch.zeros(size=(batch_size, HIDDEN_DIM)).cuda()
+        mem_4 = torch.zeros(size=(batch_size, OUTPUT_DIM)).cuda()
 
         preds_list = []
         out_layerwise_list = []

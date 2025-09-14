@@ -1,20 +1,25 @@
+Running the Networks with following command: 
+To Change the Parameters of all Networks use config.py
+
 python -m baseline.ann.Training
 python -m baseline.cnn.Training
 python -m baseline.scnn.Training
+python -m baseline.snn.Training
+
+python -m SynSurrogateGrad.snn.Training
+python -m SynSurrogateGrad.scnn.Training
 
 
-You need to change the config in the plotting folder to the right nn folder
+
+You need to change the config in the plotting folder to the right nn folder.
 python -m plotting.GetBestAccuracy
 python -m plotting.PlotSigmoid_SigmoidPrime
 python -m plotting.PlotTraining
 
-3 Dense Layer 
-MNIST 28x28->64->64->64->10 
-
-Activastion = Sigmoid
-Batch_Size= 128
-Optimizer = Adam
-LossFunction = CrossEntropyLoss
-LEarningrate 0.0001
-Epochen=32
-Dataset=MNIST_FASHION
+This commands are used to create the plots for the presentation
+python -m plotting.CompareTraining_CNN
+python -m plotting.CompareTraining_FFN
+python -m plotting.PlotCompareDivergence_SCNN
+python -m plotting.PlotCompareDivergence_SNN
+python -m plotting.PlotDivergenceLayerwise_SCNN
+python -m plotting.PlotDivergenceLayerwise_SNN

@@ -8,14 +8,11 @@ from snntorch import functional as SF
 
 from snntorch import spikegen
 
-from Classifier import *
+from config import *
+
+from baseline.scnn.Classifier import *
 
 import tqdm
-
-NUM_EPOCHS = 32
-BATCH_SIZE = 128
-NUM_THREADS = 16
-
 
 def main():
 

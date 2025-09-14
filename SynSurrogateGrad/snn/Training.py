@@ -8,14 +8,14 @@ from snntorch import functional as SF
 
 from snntorch import spikegen
 
-from Classifier import *
+from config import *
+
+from SynSurrogateGrad.snn.Classifier import Classifier
+from SynSurrogateGrad.snn.Divergence import compute_divergence
 
 import tqdm
 
-NUM_EPOCHS = 32
-BATCH_SIZE = 128
-NUM_THREADS = 16
-
+file_path = f"./SynSurrogateGrad/snn/logs/"
 
 def main():
 
@@ -63,8 +63,6 @@ def main():
     #
     # Logging
     #
-
-    file_path = f"./logs/"
 
     writer = SummaryWriter(file_path)
 

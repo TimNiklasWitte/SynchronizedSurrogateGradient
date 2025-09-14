@@ -9,8 +9,10 @@ from snntorch import spikegen
 
 import tqdm
 
-from Leaky import *
-from Divergence import *
+from config import *
+
+from baseline.snn.Leaky import *
+from baseline.snn.Divergence import *
 
 
 class Classifier(nn.Module):
@@ -20,27 +22,27 @@ class Classifier(nn.Module):
 
 
         # Temporal Dynamics
-        self.num_steps = 25
-        beta = 0.95
+        self.num_steps = NUM_STEPS
+        beta = BETA
 
 
         # Initialize layers
 
-        self.linear_1 = nn.Linear(28*28, 64)
+        self.linear_1 = nn.Linear(INPUT_DIM, HIDDEN_DIM)
         self.lif_1 = Leaky(beta=beta)
 
-        self.linear_2 = nn.Linear(64, 64)
+        self.linear_2 = nn.Linear(HIDDEN_DIM, HIDDEN_DIM)
         self.lif_2 = Leaky(beta=beta)
 
-        self.linear_3 = nn.Linear(64, 64)
+        self.linear_3 = nn.Linear(HIDDEN_DIM, HIDDEN_DIM)
         self.lif_3 = Leaky(beta=beta)
 
-        self.linear_4 = nn.Linear(64, 10)
+        self.linear_4 = nn.Linear(HIDDEN_DIM, OUTPUT_DIM)
         self.lif_4 = Leaky(beta=beta)
 
-        self.cce_rate_loss = SF.ce_rate_loss()
+        self.cce_rate_loss = SPIKE_LOSS()
 
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=0.0001)
+        self.optimizer = OPTIMIZER(self.parameters(), lr=LEARNING_RATE)
 
         #
         # Metrics
@@ -59,10 +61,10 @@ class Classifier(nn.Module):
         
         batch_size = x.shape[1]
 
-        mem_1 = torch.zeros(size=(batch_size, 64)).cuda()
-        mem_2 = torch.zeros(size=(batch_size, 64)).cuda()
-        mem_3 = torch.zeros(size=(batch_size, 64)).cuda()
-        mem_4 = torch.zeros(size=(batch_size, 10)).cuda()
+        mem_1 = torch.zeros(size=(batch_size, HIDDEN_DIM)).cuda()
+        mem_2 = torch.zeros(size=(batch_size, HIDDEN_DIM)).cuda()
+        mem_3 = torch.zeros(size=(batch_size, HIDDEN_DIM)).cuda()
+        mem_4 = torch.zeros(size=(batch_size, OUTPUT_DIM)).cuda()
 
         spk_out_list = []
 
